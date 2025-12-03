@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orçamento Alisson Móveis Planejados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap");
+        body { font-family: "Roboto", sans-serif; background: #f3f4f6; }
+        .gradient-header { background: linear-gradient(to right, #2563eb, #1d4ed8); }
+        .custom-input { border: 1px solid #e5e7eb; transition: all 0.3s ease; }
+        .custom-input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        .custom-button { background: #2563eb; transition: all 0.3s ease; }
+        .custom-button:hover { background: #1d4ed8; }
+        .custom-table { border-collapse: separate; border-spacing: 0; border: 1px solid #e5e7eb; }
+        .custom-table th { background: #2563eb; color: white; }
+        .custom-container { background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="p-4 min-h-screen">
+    <div class="max-w-4xl mx-auto custom-container rounded-lg overflow-hidden">
+        <div class="gradient-header p-6">
+            <h1 class="text-3xl font-bold mb-2 text-white">Alisson Móveis Planejados</h1>
+            <div class="text-sm text-white opacity-90">
+                <p class="mb-1">📱 Telefone: (61) 9 8170-3784</p>
+                <p>📸 Instagram: @moveisplanejadosalisson</p>
+            </div>
+        </div>
+
+        <div class="p-8">
+            <form id="orcamentoForm" class="mb-8 custom-container p-6 rounded-lg bg-gray-50">
+                <!-- Campo Cliente -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2 text-gray-700">👤 Nome do Cliente:</label>
+                    <input type="text" id="cliente" class="w-full p-3 rounded-lg custom-input bg-white" required />
+                </div>
+
+                <div class="mb-6 grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-gray-700">📅 Data:</label>
+                        <input type="date" id="data" class="w-full p-3 rounded-lg custom-input bg-white" required />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2 text-gray-700">⏳ Validade do Orçamento (dias):</label>
+                        <input type="number" id="validade" class="w-full p-3 rounded-lg custom-input bg-white" value="15" required />
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">📝 Adicionar Item</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-gray-700">🏠 Ambiente:</label>
+                            <input type="text" id="ambiente" class="w-full p-3 rounded-lg custom-input bg-white" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-gray-700">📋 Descrição:</label>
+                            <input type="text" id="descricao" class="w-full p-3 rounded-lg custom-input bg-white" required />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2 text-gray-700">💰 Valor (R$):</label>
+                            <input type="number" id="valor" step="0.01" class="w-full p-3 rounded-lg custom-input bg-white" required />
+                        </div>
+                    </div>
+                    <button type="button" onclick="adicionarItem()" class="mt-4 custom-button text-white px-6 py-3 rounded-lg">➕ Adicionar Item</button>
+                </div>
+            </form>
+
+            <div class="custom-container rounded-lg overflow-hidden mb-8">
+                <table class="w-full custom-table">
+                    <thead>
+                        <tr>
+                            <th class="p-4 text-left">Ambiente</th>
+                            <th class="p-4 text-left">Descrição</th>
+                            <th class="p-4 text-right">Valor</th>
+                            <th class="p-4 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaItens"></tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50 font-bold">
+                            <td colspan="2" class="p-4 text-right">TOTAL</td>
+                            <td class="p-4 text-right" id="valorTotal">R$ 0,00</td>
+                            <td class="p-4"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="custom-container p-6 rounded-lg mb-8 bg-gray-50">
+                <h3 class="text-lg font-bold mb-4 text-gray-800">📝 Observações</h3>
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">💳 Forma de Pagamento:</label>
+                        <select id="formaPagamento" class="w-full p-3 rounded-lg custom-input bg-white" onchange="toggleParcelas()" required>
+                            <option value="">Selecione...</option>
+                            <option value="vista">À Vista</option>
+                            <option value="parcelado">Parcelado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">🚚 Previsão de entrega (dias úteis):</label>
+                        <input type="number" id="previsaoEntrega" class="w-full p-3 rounded-lg custom-input bg-white" value="35" />
+                    </div>
+                </div>
+
+                <!-- Campo Parcelas -->
+                <div id="divParcelas" class="grid grid-cols-2 gap-6 mb-6 hidden">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">📊 Parcelas:</label>
+                        <select id="parcelas" class="w-full p-3 rounded-lg custom-input bg-white">
+                            <option value="1">1x (Sem juros)</option>
+                            <option value="2">2x (Sem juros)</option>
+                            <option value="3">3x (Com juros)</option>
+                            <option value="4">4x (Com juros)</option>
+                            <option value="5">5x (Com juros)</option>
+                            <option value="6">6x (Com juros)</option>
+                            <option value="7">7x (Com juros)</option>
+                            <option value="8">8x (Com juros)</option>
+                            <option value="9">9x (Com juros)</option>
+                            <option value="10">10x (Com juros)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Desconto à Vista -->
+                <div id="divDescontoVista" class="grid grid-cols-2 gap-6 mb-6 hidden">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">🎁 Desconto à Vista:</label>
+                        <select id="descontoVista" class="w-full p-3 rounded-lg custom-input bg-white" onchange="aplicarDescontoVista()">
+                            <option value="0">Sem desconto</option>
+                            <option value="5">5% de desconto</option>
+                            <option value="10">10% de desconto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">➕ Acréscimo (R$):</label>
+                        <input type="number" id="acrescimo" step="0.01" class="w-full p-3 rounded-lg custom-input bg-white" value="0" onchange="calcularTotal()" />
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">➖ Desconto Manual (R$):</label>
+                        <input type="number" id="desconto" step="0.01" class="w-full p-3 rounded-lg custom-input bg-white" value="0" onchange="calcularTotal()" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <button onclick="gerarPDF()" class="custom-button text-white px-8 py-3 rounded-lg">📑 Salvar como PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let itens = [];
+
+        function adicionarItem() {
+            const ambiente = document.getElementById("ambiente").value;
+            const descricao = document.getElementById("descricao").value;
+            const valor = parseFloat(document.getElementById("valor").value);
+            
+            if (!ambiente || !descricao || isNaN(valor)) {
+                alert("Por favor, preencha todos os campos corretamente");
+                return;
+            }
+            
+            itens.push({ ambiente, descricao, valor });
+            atualizarTabela();
+            limparCampos();
+            calcularTotal();
+        }
+
+        function atualizarTabela() {
+            const tbody = document.getElementById("tabelaItens");
+            tbody.innerHTML = "";
+            itens.forEach((item, index) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="p-4 border-t">${item.ambiente}</td>
+                    <td class="p-4 border-t">${item.descricao}</td>
+                    <td class="p-4 border-t text-right">R$ ${item.valor.toFixed(2)}</td>
+                    <td class="p-4 border-t text-center">
+                        <button onclick="removerItem(${index})" class="text-red-600 hover:text-red-800 font-bold">🗑️ Remover</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function removerItem(index) {
+            itens.splice(index, 1);
+            atualizarTabela();
+            calcularTotal();
+        }
+
+        function limparCampos() {
+            document.getElementById("ambiente").value = "";
+            document.getElementById("descricao").value = "";
+            document.getElementById("valor").value = "";
+        }
+
+        function calcularTotal() {
+            const subtotal = itens.reduce((acc, item) => acc + item.valor, 0);
+            const acrescimo = parseFloat(document.getElementById("acrescimo").value) || 0;
+            const descontoManual = parseFloat(document.getElementById("desconto").value) || 0;
+            const total = subtotal + acrescimo - descontoManual;
+            document.getElementById("valorTotal").textContent = `R$ ${total.toFixed(2)}`;
+        }
+
+        function toggleParcelas() {
+            const formaPagamento = document.getElementById("formaPagamento").value;
+            const divParcelas = document.getElementById("divParcelas");
+            const divDescontoVista = document.getElementById("divDescontoVista");
+            
+            divParcelas.classList.toggle("hidden", formaPagamento !== "parcelado");
+            divDescontoVista.classList.toggle("hidden", formaPagamento !== "vista");
+            
+            if (formaPagamento === "vista") {
+                document.getElementById("desconto").value = "0";
+            }
+            calcularTotal();
+        }
+
+        function aplicarDescontoVista() {
+            const descontoVista = parseFloat(document.getElementById("descontoVista").value) || 0;
+            const subtotal = itens.reduce((acc, item) => acc + item.valor, 0);
+            const valorDesconto = (subtotal * descontoVista) / 100;
+            document.getElementById("desconto").value = valorDesconto.toFixed(2);
+            calcularTotal();
+        }
+
+        function gerarPDF() {
+            if (itens.length === 0) {
+                alert("Adicione pelo menos um item antes de gerar o PDF.");
+                return;
+            }
+
+            if (!document.getElementById("cliente").value) {
+                alert("Por favor, informe o nome do cliente.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho
+            doc.setFillColor(37, 99, 235);
+            doc.rect(0, 0, 220, 40, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.text("Alisson Móveis Planejados", 105, 20, { align: "center" });
+            doc.setFontSize(12);
+            doc.text("Telefone: (61) 9 8170-3784", 105, 28, { align: "center" });
+            doc.text("Instagram: @moveisplanejadosalisson", 105, 35, { align: "center" });
+
+            // Informações básicas
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            let y = 55;
+            doc.text(`Cliente: ${document.getElementById("cliente").value}`, 20, y);
+            y += 7;
+            doc.text(`Data: ${document.getElementById("data").value}`, 20, y);
+            y += 7;
+            doc.text(`Validade: ${document.getElementById("validade").value} dias`, 20, y);
+
+            // Dados da tabela
+            const tableData = itens.map((item) => [
+                item.ambiente,
+                item.descricao,
+                `R$ ${item.valor.toFixed(2)}`
+            ]);
+
+            // Cálculos finais
+            const subtotal = itens.reduce((acc, item) => acc + item.valor, 0);
+            const acrescimo = parseFloat(document.getElementById("acrescimo").value) || 0;
+            const descontoManual = parseFloat(document.getElementById("desconto").value) || 0;
+            const total = subtotal + acrescimo - descontoManual;
+
+            // Linhas de totais
+            tableData.push(["", "Subtotal:", `R$ ${subtotal.toFixed(2)}`]);
+            if (acrescimo > 0) tableData.push(["", "Acréscimo:", `R$ ${acrescimo.toFixed(2)}`]);
+            if (descontoManual > 0) tableData.push(["", "Desconto:", `R$ ${descontoManual.toFixed(2)}`]);
+            tableData.push(["", "TOTAL:", `R$ ${total.toFixed(2)}`]);
+
+            // Tabela
+            doc.autoTable({
+                startY: 70,
+                head: [["Ambiente", "Descrição", "Valor"]],
+                body: tableData,
+                theme: "grid",
+                headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 12, fontStyle: "bold" },
+                styles: { fontSize: 10, cellPadding: 5 },
+                columnStyles: {
+                    0: { cellWidth: 50 },
+                    1: { cellWidth: 80 },
+                    2: { cellWidth: 40, halign: "right" }
+                }
+            });
+
+            // Observações
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(14);
+            doc.text("Observações:", 20, finalY);
+            doc.setFontSize(12);
+            let obsY = finalY + 7;
+            
+            const formaPagamento = document.getElementById("formaPagamento").value;
+            if (formaPagamento === "parcelado") {
+                const parcelas = document.getElementById("parcelas").value;
+                const juros = parcelas > 2 ? " (Com juros)" : " (Sem juros)";
+                doc.text(`Forma de Pagamento: ${parcelas}x${juros}`, 20, obsY);
+                obsY += 7;
+            } else if (formaPagamento === "vista") {
+                const descontoVista = document.getElementById("descontoVista").value;
+                doc.text(`Forma de Pagamento: À Vista (${descontoVista}% desconto)`, 20, obsY);
+                obsY += 7;
+            } else {
+                doc.text("Forma de Pagamento: Não especificada", 20, obsY);
+                obsY += 7;
+            }
+            
+            doc.text(`Previsão de Entrega: ${document.getElementById("previsaoEntrega").value} dias úteis`, 20, obsY);
+
+            doc.save(`orcamento-${document.getElementById("cliente").value.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        // Inicializar data atual
+        document.getElementById("data").valueAsDate = new Date();
+    </script>
+</body>
+</html>
